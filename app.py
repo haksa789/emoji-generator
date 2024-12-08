@@ -4,11 +4,13 @@ from flask import Flask, request, jsonify
 import openai
 from flask_cors import CORS
 
-app = Flask(__name__)
-CORS(app, resources={r"/generate": {"origins": "http://localhost:3000"}})
-
 # .env 파일 로드
 load_dotenv()
+
+# Flask 앱 생성 및 CORS 설정
+app = Flask(__name__)
+CORS(app, resources={r"/generate": {"origins": os.getenv("CORS_ORIGIN")}})
+
 # OpenAI API Key 설정
 openai.api_key = os.getenv("OPENAI_API_KEY")  # 환경 변수에서 API 키 불러오기
 
@@ -16,6 +18,7 @@ DEBUG_MODE = os.getenv("DEBUG_MODE", "True") == "True"
 
 if DEBUG_MODE:
     print(f"Debugging enabled. Loaded API Key: {os.getenv('OPENAI_API_KEY')}")
+    print(f"CORS Origin: {os.getenv('CORS_ORIGIN')}")
 
 @app.route('/generate', methods=['POST'])
 def generate_image():
@@ -52,4 +55,4 @@ def generate_image():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
-    app.run(debug=False)
+    app.run(debug=DEBUG_MODE, host='0.0.0.0', port=5000)
