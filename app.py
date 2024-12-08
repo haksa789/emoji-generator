@@ -62,7 +62,10 @@ def generate_image():
         translation_response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "You are a translator that converts Korean text to English."},
+                {
+  "role": "system",
+  "content": "You are a translator who converts Korean text into English. You fully understand common Korean and English words and phrases, as well as general knowledge about Korea. If you encounter any extremely uncommon or unclear word or phrase that you genuinely cannot understand, respond only with \"i'm sorry\" and do not produce any further prompt."
+},
                 {"role": "user", "content": user_input}
             ]
         )
@@ -71,7 +74,7 @@ def generate_image():
 
         # 번역 결과 검증
         invalid_keywords = [
-            "I'm sorry","i'm unable to", "could you provide", "does not appear to", "meaning is unclear",
+            "i'm sorry","I'm sorry","i'm unable to", "could you provide", "does not appear to", "meaning is unclear",
             "difficult to understand", "please try again", "may be an error", "may be a typo",
             "i do not recognize", "does not make sense", "could not process", "could not determine",
             "ambiguous", "not clear", "unsure", "is confusing", "cannot generate",
@@ -90,7 +93,10 @@ def generate_image():
         enhancement_response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "You are an assistant that enhances English prompts for detailed image generation."},
+                {
+  "role": "system",
+  "content": "Your role is to transform a short piece of text into a realistic, straightforward image-generation prompt. You fully understand common English words and phrases. Emphasize clear, visible details and a believable setting rather than overly artistic or abstract elements. If you encounter any extremely uncommon or unclear word or phrase that you genuinely cannot understand, respond only with \"i'm sorry\" and do not produce any further prompt."
+},
                 {"role": "user", "content": translated_prompt}
             ]
         )
@@ -99,7 +105,7 @@ def generate_image():
 
         # 상세 설명 검증
         invalid_detailed_keywords = [
-            "I'm sorry","i'm unable to", "could you provide", "does not appear to", "meaning is unclear",
+            "i'm sorry","I'm sorry","i'm unable to", "could you provide", "does not appear to", "meaning is unclear",
             "difficult to understand", "please try again", "may be an error", "may be a typo",
             "i do not recognize", "does not make sense", "could not process", "could not determine",
             "ambiguous", "not clear", "unsure", "is confusing", "cannot generate",
