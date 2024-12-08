@@ -1,5 +1,6 @@
 import os
 import logging
+from datetime import datetime
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 import openai
@@ -16,17 +17,30 @@ CORS(app, resources={r"/generate": {"origins": os.getenv("CORS_ORIGIN")}})
 openai.api_key = os.getenv("OPENAI_API_KEY")  # 환경 변수에서 API 키 불러오기
 
 DEBUG_MODE = os.getenv("DEBUG_MODE", "True") == "True"
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+
+# 날짜별 로그 파일 설정
+log_dir = "logs"
+today_date = datetime.now().strftime("%Y-%m-%d")  # 오늘 날짜 형식: YYYY-MM-DD
+
+# 로그 디렉토리 생성
+if not os.path.exists(log_dir):
+    os.makedirs(log_dir)  # logs 디렉토리 생성
+
+# 로그 파일 경로 설정
+log_file = f"{log_dir}/{today_date}.log"
 
 # 로깅 설정
 logging.basicConfig(
-    filename="logs/server.log",  # 로그 파일 경로
-    level=logging.INFO,  # 로그 레벨
-    format="%(asctime)s - %(levelname)s - %(message)s"  # 로그 포맷
+    filename=log_file,
+    level=logging.DEBUG if DEBUG_MODE else logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
 if DEBUG_MODE:
     print(f"Debugging enabled. Loaded API Key: {os.getenv('OPENAI_API_KEY')}")
     print(f"CORS Origin: {os.getenv('CORS_ORIGIN')}")
+    print(f"Logs will be saved in: {log_file}")
 
 @app.route('/generate', methods=['POST'])
 def generate_image():

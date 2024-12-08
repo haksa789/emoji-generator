@@ -14,3 +14,7 @@ venv/
 
 # 기타 시스템 파일
 .DS_Store
+
+# 로그 파일
+logs/
+*.log
