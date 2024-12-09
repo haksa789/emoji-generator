@@ -58,83 +58,63 @@ def generate_image():
                 logging.warning("유효하지 않은 입력 패턴")
                 return jsonify({"error": "앗! 무의미한 입력이에요. 조금 더 구체적으로 입력해 주세요! 🌟"}), 400
 
-        # 1. 프롬프트 번역
-        translation_response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+        # 1. 프롬프트에 대한 자세한 설명 생성
+        explanation_response = openai.ChatCompletion.create(
+            model="gpt-4o-mini-2024-07-18",
             messages=[
                 {
-  "role": "system",
-  "content": "You are a translator who converts Korean text into English. You fully understand common Korean and English words and phrases, as well as general knowledge about Korea. If you encounter any extremely uncommon or unclear word or phrase that you genuinely cannot understand, respond only with \"i'm sorry\" and do not produce any further prompt."
-},
-                {"role": "user", "content": user_input}
-            ]
+                    "role": "system",
+                    "content": (
+                    "You are an expert who can create detailed descriptions of different topics to the AI who paints. Any word should convey its external features perfectly. For example, even if it seems like I'm asking you a question, you should explain the word, not the question."
+                    "Your mission is to generate detailed descriptions based on your input; however, the number of characters must be no more than 200."
+                    ),
+                },
+                {"role": "user", "content": user_input}  # user의 입력값
+            ],
         )
-        translated_prompt = translation_response['choices'][0]['message']['content']
-        logging.info(f"Translated Prompt: {translated_prompt}")
+        
+        detailed_explanation = explanation_response['choices'][0]['message']['content']
+        logging.info(f"Detailed Explanation: {detailed_explanation}")
 
-        # 번역 결과 검증
+        # 2. 설명을 영어로 번역
+        translation_response = openai.ChatCompletion.create(
+            model="gpt-4o-mini-2024-07-18",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a translator who translates Korean text into English."
+                },
+                {"role": "user", "content": detailed_explanation}  # 설명된 내용을 영어로 번역
+            ],
+        )
+        
+        translated_explanation = translation_response['choices'][0]['message']['content']
+        logging.info(f"Translated Explanation: {translated_explanation}")
+
+        # 검증: 번역된 결과가 유효한지 확인
         invalid_keywords = [
-            "i'm sorry","I'm sorry","i'm unable to", "could you provide", "does not appear to", "meaning is unclear",
-            "difficult to understand", "please try again", "may be an error", "may be a typo",
-            "i do not recognize", "does not make sense", "could not process", "could not determine",
-            "ambiguous", "not clear", "unsure", "is confusing", "cannot generate",
-            "unknown context", "lack of clarity", "doesn't seem clear", "hard to understand",
-            "not valid", "does not make sense", "is not a valid",
-            "could not understand", "may be a typo", "please provide more context",
-            "check for errors", "unrecognizable", "does not appear", "meaning is unclear",
-            "specific term", "unknown term", "does not exist", "is unclear", "is not recognized",
-            "seems to be invalid", "could you clarify", "please clarify"
+            "i'm sorry", "I'm sorry", "i'm unable to", "could you provide", "does not appear to", "meaning is unclear",
+            "difficult to understand", "please try again", "may be an error", "may be a typo", "i do not recognize", 
+            "does not make sense", "could not process", "could not determine", "ambiguous", "not clear", "unsure", 
+            "is confusing", "cannot generate", "unknown context", "lack of clarity", "doesn't seem clear", "hard to understand",
+            "not valid", "does not make sense", "is not a valid", "could not understand", "may be a typo", "please provide more context",
+            "check for errors", "unrecognizable", "does not appear", "meaning is unclear", "specific term", "unknown term", 
+            "does not exist", "is unclear", "is not recognized", "seems to be invalid", "could you clarify", "please clarify"
         ]
-        if any(keyword in translated_prompt.lower() for keyword in invalid_keywords):
+        
+        if any(keyword in translated_explanation.lower() for keyword in invalid_keywords):
             logging.warning("유효하지 않은 번역 결과")
             return jsonify({"error": "앗! 제가 그 말을 잘 이해하지 못했어요. 다른 멋진 아이디어를 입력해 주세요! 🚀"}), 400
 
-        # 2. 번역된 프롬프트에 자세한 설명 추가
-        enhancement_response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {
-  "role": "system",
-  "content": "Your role is to transform a short piece of text into a realistic, straightforward image-generation prompt. You fully understand common English words and phrases. Emphasize clear, visible details and a believable setting rather than overly artistic or abstract elements. If you encounter any extremely uncommon or unclear word or phrase that you genuinely cannot understand, respond only with \"i'm sorry\" and do not produce any further prompt."
-},
-                {"role": "user", "content": translated_prompt}
-            ]
-        )
-        detailed_prompt = enhancement_response['choices'][0]['message']['content']
-        logging.info(f"Detailed Prompt: {detailed_prompt}")
-
-        # 상세 설명 검증
-        invalid_detailed_keywords = [
-            "i'm sorry","I'm sorry","i'm unable to", "could you provide", "does not appear to", "meaning is unclear",
-            "difficult to understand", "please try again", "may be an error", "may be a typo",
-            "i do not recognize", "does not make sense", "could not process", "could not determine",
-            "ambiguous", "not clear", "unsure", "is confusing", "cannot generate",
-            "unknown context", "lack of clarity", "doesn't seem clear", "hard to understand",
-            "not valid", "does not make sense", "is not a valid",
-            "could not understand", "may be a typo", "please provide more context",
-            "check for errors", "unrecognizable", "does not appear", "meaning is unclear",
-            "specific term", "unknown term", "does not exist", "is unclear", "is not recognized",
-            "seems to be invalid", "could you clarify", "please clarify"
-        ]
-        if any(keyword in detailed_prompt.lower() for keyword in invalid_detailed_keywords):
-            logging.warning("유효하지 않은 상세 설명 결과")
-            return jsonify({"error": "음... 제가 잘 모르겠는 내용이에요. 더 구체적으로 알려주세요! 🧐"}), 400
-
-        # 상세 설명이 지나치게 짧은 경우 검증
-        if len(detailed_prompt.split()) < 5:
-            logging.warning("상세 설명이 너무 짧음")
-            return jsonify({"error": "앗! 설명이 너무 짧아요. 조금 더 자세히 입력해 주세요! 📜"}), 400
-
         # 3. 이미지 생성
         response = openai.Image.create(
-            prompt=detailed_prompt,
+            prompt=translated_explanation,
             n=1,
             size="512x512"
         )
         image_url = response['data'][0]['url']
         logging.info(f"Generated Image URL: {image_url}")
         
-
         return jsonify({"image_url": image_url})
 
     except Exception as e:
