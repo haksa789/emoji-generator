@@ -115,7 +115,11 @@ def generate_image():
         image_url = response['data'][0]['url']
         logging.info(f"Generated Image URL: {image_url}")
         
-        return jsonify({"image_url": image_url})
+        # 상세 설명과 이미지 URL을 함께 반환
+        return jsonify({
+            "image_url": image_url,
+            "detailed_explanation": detailed_explanation
+        })
 
     except Exception as e:
         logging.error(f"Error: {str(e)}")
